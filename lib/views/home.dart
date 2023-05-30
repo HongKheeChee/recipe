@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:untitled3/models/recipe_model.dart';
+import 'package:untitled3/views/recipe_view.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Home extends StatefulWidget {
 
@@ -37,7 +39,7 @@ class _HomeState extends State<Home> {
       recipes.add(recipeModel);
       
     });
-    
+    setState(() {});
     print("${recipes.toString()}");
   }
 
@@ -64,83 +66,254 @@ class _HomeState extends State<Home> {
                   )
               ),
             ),
-            Container(
-              padding: EdgeInsets.symmetric(vertical: 30,horizontal: 30) ,
-              child: Column(
-                children: <Widget>[
+            SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 30,horizontal: 30) ,
+                child: Column(
+                  children: <Widget>[
 
-                  Row(
-                    mainAxisAlignment: kIsWeb ? MainAxisAlignment.start :
-                    MainAxisAlignment .center,
-                    children: <Widget>[
-                      Text('food',style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white
-                      ),),
-
-                      Text("Recipe", style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.blue
-                      ),)
-
-                    ],
-                  ),
-                  SizedBox(height: 30,),
-                  Text("data",style: TextStyle( fontSize: 20,
-                    color: Colors.white
-                  ),
-
-                  ),
-                  Text("data"),
-                  Container(
-                    width: MediaQuery.of(context).size.width,
-                    child: Row(
+                    Row(
+                      mainAxisAlignment: kIsWeb ? MainAxisAlignment.start :
+                      MainAxisAlignment .center,
                       children: <Widget>[
-                        Expanded(
-                          child: TextField(
-                            controller: textEditingController,
-                            decoration: InputDecoration(
-                              hintText: "Enter",
-                              hintStyle:TextStyle(
-                                fontSize: 18,
-                              color: Colors.white.withOpacity(0.5)
-                              ),
+                        Text('food',style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white
+                        ),),
 
-                            ),
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.white
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 16,),
-                        InkWell(
-                          onTap: (){
-                            if(textEditingController.text.isNotEmpty){
-                              getRecipes(textEditingController.text);
-                              print('ok');
-                            }else{
-                              print("object");
-                            }
-                          },
+                        Text("Recipe", style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.blue
+                        ),)
 
-                          child :Container(
-                            child: Icon(Icons.search,color: Colors.white,),
-                          )
-                        )
                       ],
                     ),
+                    SizedBox(height: 30,),
+                    Text("data",style: TextStyle( fontSize: 20,
+                      color: Colors.white
+                    ),
 
-                  )
-                ],
+                    ),
+                    Text("data"),
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: TextField(
+                              controller: textEditingController,
+                              decoration: InputDecoration(
+                                hintText: "Enter",
+                                hintStyle:TextStyle(
+                                  fontSize: 18,
+                                color: Colors.white.withOpacity(0.5)
+                                ),
+
+                              ),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 16,),
+                          InkWell(
+                            onTap: (){
+                              if(textEditingController.text.isNotEmpty){
+                                getRecipes(textEditingController.text);
+                                print('ok');
+                              }else{
+                                print("object");
+                              }
+                            },
+
+                            child :Container(
+                              child: Icon(Icons.search,color: Colors.white,),
+                            )
+                          )
+                        ],
+                      ),
+
+                    ),
+                    SizedBox(height: 30,),
+                    Container(
+                      child: GridView(
+                          shrinkWrap: true,
+                          scrollDirection: Axis.vertical,
+                          physics: ClampingScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 200,mainAxisSpacing: 10.0
+                          ),
+                          children: List.generate(recipes.length, (index) {
+                            return GridTile(
+                                child: RecipieTile(
+                                title: recipes[index].label,
+                                imgUrl: recipes[index].image,
+                                desc: recipes[index].source,
+                                url: recipes[index].url,)
+                            );
+                          }),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-
-
             ),
           ],
         )
     );
   }
 }
+
+class RecipieTile extends StatefulWidget {
+  final String title, desc, imgUrl, url;
+
+  RecipieTile({this.title, this.desc, this.imgUrl, this.url});
+
+  @override
+  _RecipieTileState createState() => _RecipieTileState();
+}
+
+class _RecipieTileState extends State<RecipieTile> {
+  _launchURL(String url) async {
+    print(url);
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      children: <Widget>[
+        GestureDetector(
+          onTap: () {
+            if (kIsWeb) {
+              _launchURL(widget.url);
+            } else {
+              print(widget.url + " this is what we are going to see");
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => RecipeView(
+                        postUrl: widget.url,
+                      )));
+            }
+          },
+          child: Container(
+            margin: EdgeInsets.all(8),
+            child: Stack(
+              children: <Widget>[
+                Image.network(
+                  widget.imgUrl,
+                  height: 200,
+                  width: 200,
+                  fit: BoxFit.cover,
+                ),
+                Container(
+                  width: 200,
+                  alignment: Alignment.bottomLeft,
+                  decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [Colors.white30, Colors.white],
+                          begin: FractionalOffset.centerRight,
+                          end: FractionalOffset.centerLeft)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          widget.title,
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                              fontFamily: 'Overpass'),
+                        ),
+                        Text(
+                          widget.desc,
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.black54,
+                              fontFamily: 'OverpassRegular'),
+                        )
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class GradientCard extends StatelessWidget {
+  final Color topColor;
+  final Color bottomColor;
+  final String topColorCode;
+  final String bottomColorCode;
+
+  GradientCard(
+      {this.topColor,
+        this.bottomColor,
+        this.topColorCode,
+        this.bottomColorCode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Wrap(
+        children: <Widget>[
+          Container(
+            child: Stack(
+              children: <Widget>[
+                Container(
+                  height: 160,
+                  width: 180,
+                  decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [topColor, bottomColor],
+                          begin: FractionalOffset.topLeft,
+                          end: FractionalOffset.bottomRight)),
+                ),
+                Container(
+                  width: 180,
+                  alignment: Alignment.bottomLeft,
+                  decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [Colors.white30, Colors.white],
+                          begin: FractionalOffset.centerRight,
+                          end: FractionalOffset.centerLeft)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: <Widget>[
+                        Text(
+                          topColorCode,
+                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                        ),
+                        Text(
+                          bottomColorCode,
+                          style: TextStyle(fontSize: 16, color: bottomColor),
+                        )
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
